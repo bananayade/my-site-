@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>万能ものしりアプリ</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result-area {
+            margin-top: 30px;
+            width: 80%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 100px;
+            line-height: 1.6;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+        .error {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 万能ものしり検索</h1>
+    
+    <div class="search-box">
+        <input type="text" id="keyword" placeholder="知りたい言葉を入力（例: 織田信長）">
+        <button id="search-btn">調べる</button>
+    </div>
+
+    <div id="result-area">
+        ここに結果が表示されます
+    </div>
+
+    <script>
+        const searchBtn = document.getElementById('search-btn');
+        const keywordInput = document.getElementById('keyword');
+        const resultArea = document.getElementById('result-area');
+
+        // ボタンを押した時の動作
+        searchBtn.addEventListener('click', () => {
+            const keyword = keywordInput.value;
+            
+            if (keyword === "") {
+                alert("言葉を入力してください！");
+                return;
+            }
+
+            // 検索中であることを表示
+            resultArea.innerHTML = '<span class="loading">インターネットから情報を収集中...</span>';
+
+            // WikipediaのAPI（情報の窓口）に問い合わせるURLを作る
+            // 専門的な設定ですが、要は「日本語のWikipediaから」「概要を」「JSON形式で」くださいという依頼です
+            const apiUrl = `https://ja.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&origin=*&titles=${encodeURIComponent(keyword)}`;
+
+            // 実際にデータを取りに行く（Fetch機能）
+            fetch(apiUrl)
+                .then(response => response.json()) // 帰ってきたデータをプログラムで読める形式に変換
+                .then(data => {
+                    const pages = data.query.pages;
+                    const pageId = Object.keys(pages)[0]; // 最初の結果を取得
+                    
+                    if (pageId === "-1") {
+                        resultArea.innerHTML = '<span class="error">情報が見つかりませんでした。別の言葉で試してください。</span>';
+                    } else {
+                        // 成功！画面に表示
+                        const extract = pages[pageId].extract;
+                        const title = pages[pageId].title;
+                        
+                        resultArea.innerHTML = `<h2>${title}</h2><p>${extract}</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultArea.innerHTML = '<span class="error">通信エラーが発生しました。</span>';
+                });
+        });
+    </script>
+
+</body>
+</html>
